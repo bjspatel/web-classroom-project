@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{{className}}</title>
+	<link rel="stylesheet" href="../css/classroom.css"/>
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+	$(function() {
+		var host = '{{config.host}}',
+			messages = io.connect(host + '/nsMessages'),
+			classNumber = {{classNumber}},
+			fullName = '{{user.first_name}} {{user.last_name}}',
+			user = {first_name: '{{user.first_name}}', last_name: '{{user.last_name}}', user_name: '{{user.user_name}}' },
+			ctrlPressed = false;
+
+		$('#status-toggle').change(function () {
+			var isChecked = $(this).is(":checked");
+			$('.newmessage').prop('disabled', !isChecked);
+			messages.emit('userStatusChanged', {'classNumber':classNumber, 'user': user, 'online': isChecked});
+		});
+
+		$("#moreClassrooms, #logout").click(function(e) {
+			if(this.id === "logout") {
+				if(confirm("Are you sure you want to sign out?") === false) {
+					return;
+				}
+			}
+			messages.emit('userStatusChanged', {'classNumber':classNumber, 'user': user, 'online': false});
+		});
+
+		$(document).on('keydown', '.newmessage', function(e) {
+			if(e.which === 17) {
+				ctrlPressed = true;
+			}
+		});
+
+		$(document).on('keyup', '.newmessage', function(e){
+			if(e.which === 13 && !ctrlPressed && $(this).val()!=''){
+				messages.emit('newMessage', {
+					classNumber:classNumber,
+					user:user,
+					message:$(this).val()
+				});
+				addMessage(fullName, $(this).val());
+				$(this).val('');
+			} else if(e.which === 17) {
+				ctrlPressed = false;
+				$(this).val($(this).val() + "\n");
+			}
+		});
+
+		function addNotification(message) {
+			var str = '<li><div class="msgbox">';
+				str += '<div class="msgNotification">' + message + '</div>';
+				str += '</div></li>';
+			$(str).hide().prependTo($('.messages')).slideDown(100);
+		}
+
+		function addMessage(senderFullName, message, datetime) {
+			if(!datetime) {
+				datetime = new Date().toISOString();
+			}
+			var str = '<li>';
+				str += '<div class="msgbox">';
+				str += '<div class="msgsender">' + senderFullName + '</div>';
+				str += '<div class="msg">' + message.replace(/\n/g, "<br>") + '</div>';
+				str += '<div class="msgdatetime">' + datetime.replace(/T/, "<br>").replace(/\..+/, "") + '</div>';
+				str += '</div>';
+				str += '</li>';
+			$(str).hide().prependTo($('.messages')).slideDown(100);
+		}
+
+		function updateUsersList(usersList) {
+			$('.users').html('');
+			for(var i=0; i<usersList.length; i++){
+				var userFullName = usersList[i].first_name + " " + usersList[i].last_name;
+				if(userFullName === fullName) {
+					continue;
+				}
+				var str = '<li><div class="userBox">';
+				str += '<div class="userBoxStatus">' + (usersList[i].online ? 'IN' : 'OUT') + '</div>';
+				str += '<div class="userBoxName">' + userFullName + '</div></li>';
+				$(str).appendTo($('.users'));
+			}
+		};
+
+		messages.on('connect', function() {
+			messages.emit('postConnect', {'classNumber':classNumber, 'user': user});
+		});
+
+		messages.on('addOldMessages', function(data) {
+			var messages = JSON.parse(data);
+			for(var i=0; i<messages.length; i++) {
+				var senderFullName = messages[i].user.first_name + " " + messages[i].user.last_name;
+				addMessage(senderFullName, messages[i].message, messages[i].datetime);
+			}
+		});
+
+		messages.on('notification', function(data) {
+			var dataObject = JSON.parse(data);
+			addNotification(dataObject.message);
+			if(dataObject.type === 'userStatus') {
+				updateUsersList(dataObject.users);
+			}
+		});
+
+		messages.on('updateUsersList', function(data) {
+			updateUsersList(JSON.parse(data));
+		});
+
+		messages.on('message', function(data){
+			var dataObject = JSON.parse(data);
+			var senderFullName = dataObject.user.first_name + " " + dataObject.user.last_name;
+			addMessage(senderFullName, dataObject.message, dataObject.datetime);
+		});
+	})
+	</script>
+</head>
+<body>
+	<div class="rm-container">
+		<h1 class="rm-title">Class: {{className}}</h1>
+		<div class="rm-userbox">
+			<h5 class="userName" style="float:left;">{{user.first_name}} {{user.last_name}}</h5>
+			<h5 class="userName" style="float:right;"><a id="moreClassrooms" href="/classroomsList">More Chatrooms</a><a id="logout" href="/logout">Logout</a></h5>
+		</div>
+		<div class="rm-roomname"></div>
+		<div class="rm-newmessage">
+			<textarea class="newmessage" disabled='true' autocomplete="off" placeholder="Type in your message and press enter !"></textarea>
+		</div>
+
+		<div class="rm-messages">
+			<ul class="messages">
+			</ul>
+		</div>
+		<div class="rm-users">
+			<div class="userBox">
+				<div class="userBoxStatus">
+					<input id="status-toggle" class="status-toggle status-toggle-yes-no" type="checkbox"/>
+					<label for="status-toggle"></label>
+				</div>
+				<div class="userBoxName">
+					{{user.first_name}} {{user.last_name}}
+				</div>
+			</div>
+			<ul class="users">
+				
+			</ul>
+		</div>
+	</div>
+</body>
+</html>

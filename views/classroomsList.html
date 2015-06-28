@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Classrooms</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	<link rel="stylesheet" href="../css/classroomsList.css">
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+	$(function(){
+		var host 			= '{{config.host}}';
+		var socket			= io.connect(host + '/nsClassroomsList'); // http://localhost:3000/classList
+		var classes_list 	= [];
+
+		socket.on('connect', function(){
+			console.log('Connection Established !');
+		});
+
+		socket.on('classUpdate', function(data){
+			classes_list = JSON.parse(data);
+			console.log("classes_list: " + JSON.stringify(classes_list));
+			$('.classlist').html('');
+			for(var i = 0; i < classes_list.length; i++){
+
+				var str = '<li>';
+				if(classes_list[i].users.indexOf('{{user.user_name}}') >= 0 || '{{user.user_name}}' === classes_list[i].teacher_name) {
+					str += '<a href="classroom/' + classes_list[i].class_number + '">' + classes_list[i].class_name + '</a>';
+				} else {
+					str += '<div>' + classes_list[i].class_name + '</div>';
+				}
+
+				if('{{user.user_name}}' === classes_list[i].teacher_name) {
+					str += '<a href="/addStudents/' + classes_list[i].class_number + '" class="btn btn-sm" style="float:right">Add Students</a>';
+				}
+
+				str += '</li>';
+
+				$('.classlist').prepend(str);
+			}
+		});
+
+		$(document).on('click', '#create', function(){
+			var className = $('#txtNewClass').val();
+			if(className){
+				if(classes_list) {
+					for(var i=0; i<classes_list.length; i++) {
+						if(classes_list[i].class_name === className) {
+							alert("The class name '" + className + "' already exists.");
+							return;
+						}
+					}
+				}
+				var classNumber = parseInt(Math.random() * 10000);
+				socket.emit('newclass', {class_name:className, class_number: classNumber, teacher_name: '{{user.user_name}}'});
+				$('#txtNewClass').val('');
+			} else {
+				alert("Please enter a class name.");
+			}
+		});
+	});
+	$(document).ready(function() {
+		if('{{user.user_type}}' !== 'teacher') {
+			$('.cr-newclass').hide();
+		}
+	});
+	</script>
+</head>
+
+<body>
+	<div class="cr-container">
+		<h1 class="cr-title">Classrooms</h1>
+		<div class="cr-userbox">
+			<h3 class="userName">{{user.first_name}}&nbsp;{{user.last_name}}</h3>
+			<h4 class="logout"><a href="/logout">Logout</a></h4>
+		</div>
+
+		<div class="cr-newclass">
+			<input type="text" id="txtNewClass" class="cr-newclassTextbox" autocomplete="off" placeholder="Name of new room"/>
+			<button id="create" class="btn btn-success cr-newclassButton">Create Room</button>
+		</div>
+		<div class="cr-classlist">
+			<ul class="classlist">
+			</ul>
+		</div>
+	</div>
+</body>
+
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Add Students</title>
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	<link rel="stylesheet" href="../css/classroom.css">
+	<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script>
+	function clickCheckBox (id) {
+		var checkBoxValue = !$('#' + id).prop('checked');
+		$('#' + id).prop('value', checkBoxValue);
+	};
+
+	$(function() {
+		function selectUsers() {
+			{{#selectedList}}
+				$('#{{user.user_name}}').prop('checked', true);
+				$('#{{user.user_name}}').prop('value', true);
+			{{/selectedList}}
+		};
+
+		$(document).ready(function() {
+			selectUsers();
+		})
+	})
+	</script>
+</head>
+<body>
+	<div class="rm-container">
+		<h1 class="rm-title">Add Students: {{className}}</h1>
+		<div class="rm-userbox">
+			<h5 class="userName" style="float:left;">{{user.firstname}}</h5>
+			<h5 class="userName" style="float:right;"><a id="moreClassrooms" href="/classroomsList">More Chatrooms</a><a id="logout" href="/logout">Logout</a></h5>
+		</div>
+		<div class="rm-roomname"></div>
+		<form method="Post">
+			{{#usersList}}
+			<div>
+				<div class="userBox">
+					<div class="noselect">
+						<input id="{{user.user_name}}" name="{{user.user_name}}" onchange='clickCheckBox("{{user.user_name}}")' type="checkbox"/>
+						<label for="{{user.user_name}}">{{user.first_name}} {{user.last_name}}</label>
+					</div>
+				</div>
+			</div>
+			{{/usersList}}
+
+			<div>
+				<input type="submit" class="btn" value="Save"></a>
+				<a href="/classroomsList" class="btn">Cancel</a>
+			</div>
+		</form>
+
+	</div>
+</body>
+</html>
