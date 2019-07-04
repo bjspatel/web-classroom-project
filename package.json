@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "author": "Brijesh Patel",
   "license": "ISC",
@@ -22,6 +24,8 @@
     "mysql": "^2.7.0",
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",
-    "socket.io": "^1.3.5"
-  }
+    "socket.io": "^1.3.5",
+    "snyk": "^1.189.0"
+  },
+  "snyk": true
 }
